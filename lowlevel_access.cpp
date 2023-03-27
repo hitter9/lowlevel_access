@@ -6,7 +6,21 @@
 
 using namespace std;
 
+void ReadCluster(HANDLE disk, BYTE buffer[], int NumberCluster, int ClusterSize)
+{
+    int StartOffset = 3145728;
+    LARGE_INTEGER Offset;
+    Offset.QuadPart = (__int64)StartOffset + (__int64)NumberCluster * (__int64)ClusterSize;
+    auto p = SetFilePointer(disk, Offset.LowPart, &Offset.HighPart, FILE_BEGIN);
+    DWORD ReadByte;
+    auto ReadResult = ReadFile(disk, buffer, ClusterSize, &ReadByte, NULL);
+    if (!ReadResult || ClusterSize != ReadByte)
+    {
+        cout << "Ошибка чтения кластера" << endl;
+        system("pause");
+    }
 
+}
 
 int main()
 {
@@ -65,14 +79,30 @@ int main()
     cout << "Количество секторов: " << pBootRecord->NumberSector << endl;
     cout << "Сектор, с которого начинается FAT: " << pBootRecord->FirstFATSector << endl;
     cout << "Размер FAT в секторах: " << pBootRecord->SectorsSizeFAT << endl;
+    int FirstBitmapSec = pBootRecord->FirstBitmapSector;
     cout << "Первый сектор битовой карты: " << pBootRecord->FirstBitmapSector << endl;
     cout << "Количество кластеров: " << pBootRecord->NumberCluster << endl;
     cout << "Кластер, в котором начинается корневой каталог: " << pBootRecord->RootDirCluster << endl;
     cout << "Серийный номер: " << pBootRecord->SerialNumber << endl;
+    int SecSize = pow(2, int(pBootRecord->SectorSize));
     cout << "Размер сектора: " << pow(2, int(pBootRecord->SectorSize)) << endl;
+    int ClustMulti = pow(2, pBootRecord->ClusterMultiplier);
     cout << "Кластерный множитель: " << pow(2, pBootRecord->ClusterMultiplier) << endl;
+    int ClusSize = pow(2, int(pBootRecord->SectorSize)) * pow(2, pBootRecord->ClusterMultiplier);
     cout << "Размер кластера: " << pow(2, int(pBootRecord->SectorSize)) * pow(2, pBootRecord->ClusterMultiplier) << endl;
-
+    int StartOffset = 6144 * SecSize;
+    BYTE* Buffer = new BYTE[ClusSize];
+    cout << "Введите номер кластера, который хотите прочитать" << endl;
+    int ClusterNumber;
+    cin >> ClusterNumber;
+    ReadCluster(opendisk, Buffer, ClusterNumber, ClusSize);
+    for (int i = 0; i < ClusSize; i++)
+    {
+        cout << hex << setw(2) << setfill('0') << uppercase << int(Buffer[i]) << " ";
+        if ((i + 1) % 16 == 0)
+            cout << endl;
+    }
+    delete[] Buffer;
     delete[] dataBuffer;
     CloseHandle(opendisk);
     system("pause");

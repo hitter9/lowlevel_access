@@ -92,7 +92,7 @@ int main()
     cout << "Размер кластера: " << pow(2, int(pBootRecord->SectorSize)) * pow(2, pBootRecord->ClusterMultiplier) << endl;
     int StartOffset = 6144 * SecSize;
     BYTE* Buffer = new BYTE[ClusSize];
-    cout << "Введите номер кластера, который хотите прочитать" << endl;
+    cout << "Введите номер кластера, который хотите прочитать (0-1 - Битовая карта; 2 - UpCase; 3- - Область данных)" << endl;
     int ClusterNumber;
     cin >> ClusterNumber;
     ReadCluster(opendisk, Buffer, ClusterNumber, ClusSize);

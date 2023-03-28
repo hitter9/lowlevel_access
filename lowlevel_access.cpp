@@ -17,7 +17,6 @@ void ReadCluster(HANDLE disk, BYTE buffer[], int NumberCluster, int ClusterSize)
     if (!ReadResult || ClusterSize != ReadByte)
     {
         cout << "Ошибка чтения кластера" << endl;
-        system("pause");
     }
 
 }
@@ -25,9 +24,24 @@ void ReadCluster(HANDLE disk, BYTE buffer[], int NumberCluster, int ClusterSize)
 int main()
 {
     setlocale(LC_ALL, "Russian");
-    auto filename = L"\\\\.\\D:";
+    cout << "Доступные тома:" << endl;
+    auto mask = GetLogicalDrives();
+    int o = 0;
+    for (int x = 0; x < 26; x++)
+    {
+        auto n = ((mask >> x) & 1);
+        if (n)
+        {
+            cout << o << ") " << (char)(65 + x) << ":\\" << endl;
+            o++;
+        }
+    }
+    cout << endl << "Укажите Букву тома (A-Z), содержащего файловую систему ExFAT:" << endl;
+    wstring tom;
+    wcin >> tom;
+    wstring filename = L"\\\\.\\" + tom + L":";
     auto opendisk = CreateFileW(
-        filename,
+        filename.c_str(),
         GENERIC_READ,
         FILE_SHARE_READ | FILE_SHARE_WRITE,
         NULL,
@@ -38,9 +52,10 @@ int main()
     if (opendisk == INVALID_HANDLE_VALUE)
     {
         cout << "Ошибка открытия диска" << endl;
+        CloseHandle(opendisk);
         return 1;
     }
-    BYTE* dataBuffer = new BYTE[512];
+    BYTE dataBuffer[512];
     DWORD readBytes = 512;
     DWORD readedBytes;
     auto readResult = ReadFile(
@@ -53,6 +68,7 @@ int main()
     if (!readResult || readedBytes != readBytes)
     {
         cout << "Ошибка чтения диска" << endl;
+        CloseHandle(opendisk);
         return 2;
     }
 #pragma pack(push, 1)
@@ -75,6 +91,17 @@ int main()
 #pragma pack(pop)
     BOOT_exFAT* pBootRecord;
     pBootRecord = (BOOT_exFAT*)dataBuffer;
+    BYTE FS[] = "EXFAT   ";
+    for (int i = 0; i < sizeof(FS); i++)
+    {
+        if (int(pBootRecord->name[i]) != int(FS[i]))
+        {
+            cout << "Выбранный том содержит файловую систему " << pBootRecord->name << endl;
+            CloseHandle(opendisk);
+            system("pause");
+            return 3;
+        }
+    }
     cout << "Файловая система тома: " << pBootRecord->name << endl;
     cout << "Количество секторов: " << pBootRecord->NumberSector << endl;
     cout << "Сектор, с которого начинается FAT: " << pBootRecord->FirstFATSector << endl;
@@ -103,7 +130,6 @@ int main()
             cout << endl;
     }
     delete[] Buffer;
-    delete[] dataBuffer;
     CloseHandle(opendisk);
     system("pause");
     return 0;

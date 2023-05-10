@@ -6,9 +6,8 @@
 
 using namespace std;
 
-void ReadCluster(HANDLE disk, BYTE buffer[], int NumberCluster, int ClusterSize)
+void ReadCluster(HANDLE disk, BYTE buffer[], int NumberCluster, int ClusterSize, int StartOffset)
 {
-    int StartOffset = 3145728;
     LARGE_INTEGER Offset;
     Offset.QuadPart = (__int64)StartOffset + (__int64)NumberCluster * (__int64)ClusterSize;
     auto p = SetFilePointer(disk, Offset.LowPart, &Offset.HighPart, FILE_BEGIN);
@@ -117,12 +116,12 @@ int main()
     cout << "Кластерный множитель: " << pow(2, pBootRecord->ClusterMultiplier) << endl;
     int ClusSize = pow(2, int(pBootRecord->SectorSize)) * pow(2, pBootRecord->ClusterMultiplier);
     cout << "Размер кластера: " << pow(2, int(pBootRecord->SectorSize)) * pow(2, pBootRecord->ClusterMultiplier) << endl;
-    int StartOffset = 6144 * SecSize;
+    int StartOffset = pBootRecord->FirstBitmapSector * SecSize;
     BYTE* Buffer = new BYTE[ClusSize];
     cout << "Введите номер кластера, который хотите прочитать (0-1 - Битовая карта; 2 - UpCase; 3- - Область данных)" << endl;
     int ClusterNumber;
     cin >> ClusterNumber;
-    ReadCluster(opendisk, Buffer, ClusterNumber, ClusSize);
+    ReadCluster(opendisk, Buffer, ClusterNumber, ClusSize, StartOffset);
     for (int i = 0; i < ClusSize; i++)
     {
         cout << hex << setw(2) << setfill('0') << uppercase << int(Buffer[i]) << " ";
